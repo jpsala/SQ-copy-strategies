@@ -11,6 +11,7 @@ This document is the single source of truth for all task tracking in the project
 (List all tasks currently being worked on.)
 
 ## Completed
+- Copy strategies Enhancement
 (List all completed tasks.)
 
 ## Active Enhancements
@@ -19,7 +20,7 @@ This document is the single source of truth for all task tracking in the project
 ## Enhancement Details
 ### Copy strategies Enhancement
 
-**Status**: In Progress
+**Status**: Complete
 **Priority**: High
 **Estimated Effort**: Medium
 
@@ -38,14 +39,14 @@ Develop a Python GUI application that copies files from the 'spp' folder (if the
 ### Subtasks
 - [x] Review Python GUI options for no-dependency packaging (e.g., Tkinter)
 - [x] Design simple GUI for folder selection and copy action
-- [ ] Implement logic to compare and copy files from 'spp' to 'final' if also in 'real-tick'
-- [ ] Add error handling and user feedback
-- [ ] Test on Windows 10 and 11
+- [x] Implement logic to compare and copy files from 'spp' to 'final' if also in 'real-tick'
+- [x] Add error handling and user feedback
+- [x] Test on Windows 10 and 11
 - [x] Package app as a single .exe (e.g., using PyInstaller)
 - [x] Verify no dependencies required for end user
 - [x] GUI with folder selection and Start Copy button
-- [ ] Implement storing and restoring folder selections (options) on app start/exit
-- [ ] Prepare minimal user instructions
+- [x] Implement storing and restoring folder selections (options) on app start/exit
+- [x] Prepare minimal user instructions
 
 ### Dependencies
 - Python 3.x (for development)

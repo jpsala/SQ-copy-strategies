@@ -20,4 +20,13 @@ This document tracks the implementation status and progress of the project.
 - All planned work for this feature is complete
 
 ## Blockers
-- None. All planned work for this feature is complete. 
+- None. All planned work for this feature is complete.
+
+# Progress Update (Refactor & Cleanup)
+
+- Renamed all main files and references to 'copy-strategies' for consistency.
+- Removed unused and legacy files (old scripts, build artifacts, unused configs).
+- Updated build process to use a single .spec file and a clear build script.
+- Ensured the executable and all references use the new name.
+- Added a comprehensive README.md with usage and build instructions.
+- The project is now clean, consistent, and easy to build or extend. 

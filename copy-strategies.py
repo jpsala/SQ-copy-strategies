@@ -26,6 +26,7 @@ class CopyStrategiesApp(tk.Tk):
         self.spp_var = tk.StringVar()
         self.final_var = tk.StringVar()
 
+        self.folder_file_lists = []  # To hold Listbox widgets for .sqx file display
         self.create_widgets()
         self.load_settings()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -48,11 +49,15 @@ class CopyStrategiesApp(tk.Tk):
             ttk.Label(row, text=label, width=16).pack(side=tk.LEFT)
             entry = ttk.Entry(row, textvariable=var, width=50)
             entry.pack(side=tk.LEFT, padx=5)
-            browse_btn = ttk.Button(row, text="Browse", command=lambda v=var: self.browse_folder(v))
+            browse_btn = ttk.Button(row, text="Browse", command=lambda v=var, i=idx: self.browse_folder(v, i))
             browse_btn.pack(side=tk.LEFT)
-            trace_id = var.trace_add('write', lambda *args: self.update_preview_async())
+            trace_id = var.trace_add('write', lambda *args, i=idx: self.update_folder_file_list(i))
             self._trace_ids.append((var, trace_id))
             self.folder_rows.append(row)
+            # Add Listbox for .sqx files
+            file_listbox = tk.Listbox(main_frame, height=3, width=80, exportselection=False)
+            file_listbox.pack(padx=20, pady=(0, 5))
+            self.folder_file_lists.append(file_listbox)
 
         # Start button (above preview area)
         self.start_btn = ttk.Button(main_frame, text="Start", command=self.start_copy, state=tk.DISABLED)
@@ -69,19 +74,33 @@ class CopyStrategiesApp(tk.Tk):
         style.configure("NoBorder.Treeview", borderwidth=0, relief="flat")
         self.preview_tree.configure(style="NoBorder.Treeview")
 
-    def browse_folder(self, var):
-        # Open dialog at current path if valid, else default
+    def browse_folder(self, var, idx):
         current = var.get()
         initialdir = current if os.path.isdir(current) else os.path.expanduser("~")
         folder = filedialog.askdirectory(initialdir=initialdir)
         if folder:
             var.set(folder)
+            self.update_folder_file_list(idx)
+
+    def update_folder_file_list(self, idx):
+        folder = [self.real_tick_var.get(), self.spp_var.get(), self.final_var.get()][idx]
+        listbox = self.folder_file_lists[idx]
+        listbox.delete(0, tk.END)
+        if os.path.isdir(folder):
+            try:
+                sqx_files = sorted(f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith('.sqx'))
+                print(f"DEBUG: Checking folder: {folder}")
+                print(f"DEBUG: .sqx files found: {sqx_files}")
+                for f in sqx_files:
+                    listbox.insert(tk.END, f)
+            except Exception as e:
+                print(f"Exception in update_folder_file_list: {e}")
 
     def update_preview_async(self):
         threading.Thread(target=self.update_preview, daemon=True).start()
 
     def update_preview(self):
-        # Only show files that are present as regular files in BOTH spp and real-tick
+        # Only show .sqx files that are present as regular files in BOTH spp and real-tick
         self.preview_tree.delete(*self.preview_tree.get_children())
         real_tick = self.real_tick_var.get()
         spp = self.spp_var.get()
@@ -89,9 +108,9 @@ class CopyStrategiesApp(tk.Tk):
         self.files_to_copy = []
         if os.path.isdir(real_tick) and os.path.isdir(spp) and os.path.isdir(final):
             try:
-                spp_files = set(f for f in os.listdir(spp) if os.path.isfile(os.path.join(spp, f)))
-                real_tick_files = set(f for f in os.listdir(real_tick) if os.path.isfile(os.path.join(real_tick, f)))
-                # Only show files that are in BOTH spp and real-tick
+                spp_files = set(f for f in os.listdir(spp) if os.path.isfile(os.path.join(spp, f)) and f.lower().endswith('.sqx'))
+                real_tick_files = set(f for f in os.listdir(real_tick) if os.path.isfile(os.path.join(real_tick, f)) and f.lower().endswith('.sqx'))
+                # Only show .sqx files that are in BOTH spp and real-tick
                 self.files_to_copy = sorted(spp_files & real_tick_files)
                 for fname in self.files_to_copy:
                     self.preview_tree.insert("", tk.END, text=fname)
@@ -147,6 +166,9 @@ class CopyStrategiesApp(tk.Tk):
                 pass
         # Always refresh preview after restoring paths
         self.update_preview_async()
+        # Also update .sqx file lists for all folders
+        for idx in range(3):
+            self.update_folder_file_list(idx)
 
     def save_settings(self):
         # Save current folder paths to settings.json
