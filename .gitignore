@@ -1,0 +1,7 @@
+.cursor
+.git
+build
+dist
+optimization-journey
+venv
+.vscode
