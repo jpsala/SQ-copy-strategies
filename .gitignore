@@ -5,3 +5,5 @@ dist
 optimization-journey
 venv
 .vscode
+
+settings.json
