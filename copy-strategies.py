@@ -55,8 +55,10 @@ class CopyStrategiesApp(tk.Tk):
         # Folder selectors
         self.folder_rows = []
         self._trace_ids = []  # Store trace IDs for later removal
-        self.folder_file_lists = []  # Now will hold Frames, not Canvases
-        self.folder_inner_frames = []  # Will be the same as folder_file_lists
+        self.folder_file_lists = []  # Will now hold inner frames inside canvases
+        self.folder_inner_frames = []
+        self.folder_canvases = []
+        self.folder_scrollbars = []
         folder_sections = [
             ("Real-Tick Folder", self.real_tick_var, self.real_tick_prefix, True),
             ("SPP Folder", self.spp_var, self.spp_prefix, True),
@@ -85,18 +87,29 @@ class CopyStrategiesApp(tk.Tk):
             trace_id = var.trace_add('write', lambda *args, i=idx: self.update_folder_file_list(i))
             self._trace_ids.append((var, trace_id))
             self.folder_rows.append(row)
-            # File label area (Frame only)
+            # File label area (Canvas + Frame + Scrollbar)
             file_frame = ttk.Frame(lf, style="TFrame")
             file_frame.grid(row=1, column=0, sticky="nsew")
             lf.rowconfigure(1, weight=1)
             lf.columnconfigure(0, weight=1)
             file_frame.rowconfigure(0, weight=1)
             file_frame.columnconfigure(0, weight=1)
-            file_inner = ttk.Frame(file_frame, style="TFrame")
-            file_inner.grid(row=0, column=0, sticky="nsew")
+            canvas = tk.Canvas(file_frame, height=140, bg="#f8f9fa", highlightthickness=0)
+            canvas.grid(row=0, column=0, sticky="nsew")
+            scrollbar = ttk.Scrollbar(file_frame, orient="vertical", command=canvas.yview)
+            scrollbar.grid(row=0, column=1, sticky="ns")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            inner = ttk.Frame(canvas, style="TFrame")
+            canvas.create_window((0, 0), window=inner, anchor="nw")
+            def on_inner_configure(event, c=canvas):
+                c.configure(scrollregion=c.bbox("all"))
+            inner.bind("<Configure>", on_inner_configure)
             file_frame.bind("<Configure>", lambda e, idx=idx: self.update_folder_file_list(idx))
-            self.folder_file_lists.append(file_inner)
-            self.folder_inner_frames.append(file_inner)
+            canvas.bind("<Configure>", lambda e, idx=idx: self.update_folder_file_list(idx))
+            self.folder_canvases.append(canvas)
+            self.folder_scrollbars.append(scrollbar)
+            self.folder_file_lists.append(inner)
+            self.folder_inner_frames.append(inner)
 
         # Start button (centered)
         self.start_btn = ttk.Button(main_frame, text="Start", command=self.start_copy, state=tk.DISABLED)
@@ -112,9 +125,18 @@ class CopyStrategiesApp(tk.Tk):
         preview_frame.grid(row=0, column=0, sticky="nsew")
         preview_frame.rowconfigure(0, weight=1)
         preview_frame.columnconfigure(0, weight=1)
-        self.preview_inner = ttk.Frame(preview_frame, style="TFrame")
-        self.preview_inner.grid(row=0, column=0, sticky="nsew")
+        self.preview_canvas = tk.Canvas(preview_frame, height=140, bg="#f8f9fa", highlightthickness=0)
+        self.preview_canvas.grid(row=0, column=0, sticky="nsew")
+        self.preview_scrollbar = ttk.Scrollbar(preview_frame, orient="vertical", command=self.preview_canvas.yview)
+        self.preview_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.preview_canvas.configure(yscrollcommand=self.preview_scrollbar.set)
+        self.preview_inner = ttk.Frame(self.preview_canvas, style="TFrame")
+        self.preview_canvas.create_window((0, 0), window=self.preview_inner, anchor="nw")
+        def on_preview_inner_configure(event, c=self.preview_canvas):
+            c.configure(scrollregion=c.bbox("all"))
+        self.preview_inner.bind("<Configure>", on_preview_inner_configure)
         preview_frame.bind("<Configure>", lambda e: self.update_preview())
+        self.preview_canvas.bind("<Configure>", lambda e: self.update_preview())
 
     def browse_folder(self, var, idx):
         current = var.get()
@@ -143,20 +165,21 @@ class CopyStrategiesApp(tk.Tk):
                 # --- Place file labels in a grid, wrapping as needed ---
                 if not sqx_files:
                     return
-                max_width = inner.winfo_width() or 600
+                max_width = self.folder_canvases[idx].winfo_width() or 600
                 lbl_width = 120  # Use a fixed width for all labels
                 cols = max(1, max_width // lbl_width)
                 for i, f in enumerate(sqx_files):
                     lbl = ttk.Label(inner, text=f, style="FileLabel.TLabel")
                     row, col = divmod(i, cols)
-                    lbl.grid(row=row, column=col, padx=2, pady=2, sticky="w")
-                for c in range(cols):
-                    inner.grid_columnconfigure(c, weight=1)
+                    lbl.grid(row=row, column=col, padx=0, pady=0, sticky="w")
+                for c in range(20):
+                    inner.grid_columnconfigure(c, weight=0)
+                self.update_idletasks()
             except Exception as e:
                 print(f"Exception in update_folder_file_list: {e}")
 
     def update_preview_async(self):
-        threading.Thread(target=self.update_preview, daemon=True).start()
+        self.after(0, self.update_preview)
 
     def update_preview(self):
         for widget in self.preview_inner.winfo_children():
@@ -184,15 +207,15 @@ class CopyStrategiesApp(tk.Tk):
                 self.copy_pairs = [(real_tick_map[base], spp_map[base], base) for base in self.files_to_copy]
                 if not self.files_to_copy:
                     return
-                max_width = self.preview_inner.winfo_width() or 600
+                max_width = self.preview_canvas.winfo_width() or 600
                 lbl_width = 120  # Use a fixed width for all labels
                 cols = max(1, max_width // lbl_width)
                 for i, base in enumerate(self.files_to_copy):
                     lbl = ttk.Label(self.preview_inner, text=base, style="FileLabel.TLabel")
                     row, col = divmod(i, cols)
-                    lbl.grid(row=row, column=col, padx=2, pady=2, sticky="w")
-                for c in range(cols):
-                    self.preview_inner.grid_columnconfigure(c, weight=1)
+                    lbl.grid(row=row, column=col, padx=0, pady=0, sticky="w")
+                for c in range(20):
+                    self.preview_inner.grid_columnconfigure(c, weight=0)
             except Exception as e:
                 print(f"Exception in update_preview: {e}")
         if self.files_to_copy and os.path.isdir(real_tick) and os.path.isdir(spp) and os.path.isdir(final):
