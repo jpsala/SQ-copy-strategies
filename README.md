@@ -27,7 +27,7 @@ You pick the folders, see which files match, and copy them to the Final folder w
    build.bat
    ```
    (This grabs PyInstaller and builds the .exe for you.)
-5. Find your app in `dist/copy-strategies.exe` and double-click it!
+5. Find your app in `release/copy-strategies/copy-strategies.exe` and double-click it!
 
 That's it. Main code is in `copy-strategies.py` if you want to poke around.
 
