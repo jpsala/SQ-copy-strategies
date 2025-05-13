@@ -12,8 +12,8 @@ REM Clean previous build artifacts
 if exist dist rmdir /s /q dist
 if exist build rmdir /s /q build
 
-REM Build the executable using the .spec file
-pyinstaller copy-strategies.spec
+REM Build the executable using the .spec file, output to 'release'
+pyinstaller --distpath release copy-strategies.spec
 
 REM Show result
 if exist dist\copy-strategies\copy-strategies.exe (
