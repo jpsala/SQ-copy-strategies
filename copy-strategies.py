@@ -150,8 +150,8 @@ class CopyStrategiesApp(tk.Tk):
                 self.files_to_copy = sorted(common_bases)
                 self.copy_pairs = [(real_tick_map[base], spp_map[base], base) for base in self.files_to_copy]
                 for base in self.files_to_copy:
-                    # Show the SPP file name (or could show both)
-                    self.preview_tree.insert("", tk.END, text=spp_map[base])
+                    # Show the base name (filename without prefix)
+                    self.preview_tree.insert("", tk.END, text=base)
             except Exception as e:
                 print(f"Exception in update_preview: {e}")
         # Enable Start button only if there are files to copy and all folders are set
